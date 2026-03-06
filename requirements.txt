@@ -1,0 +1,8 @@
+torch
+torchvision
+opencv-python
+fastapi
+uvicorn
+numpy
+scikit-learn
+joblib

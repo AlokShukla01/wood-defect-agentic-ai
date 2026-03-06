@@ -1,16 +1,48 @@
-# React + Vite
+# Wood Defect Agentic AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hybrid CNN-based wood defect detection system using supervised and unsupervised learning with an agentic AI backend.
 
-Currently, two official plugins are available:
+This project implements a hybrid AI system for wood defect detection using:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- CNN feature extraction
+- Unsupervised anomaly detection
+- Supervised defect classification
+- FastAPI backend
+- Agentic AI decision pipeline
+- React + Vite frontend dashboard
 
-## React Compiler
+## Dataset
+MVTec AD – Wood dataset
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
+- Detect unknown defects
+- Classify known defects
+- Hybrid ML architecture
+- API-based inference
+- Interactive frontend dashboard
 
-## Expanding the ESLint configuration
+## Frontend (React + Vite)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The frontend interface is built using **React + Vite**.  
+It provides a responsive dashboard for visualizing predictions and system metrics.
+
+The Vite setup includes:
+
+- Fast development server with HMR
+- React Fast Refresh
+- ESLint configuration for code quality
+
+Two official plugins can be used:
+
+- `@vitejs/plugin-react` – Uses Babel (or OXC with Rolldown) for Fast Refresh
+- `@vitejs/plugin-react-swc` – Uses SWC for Fast Refresh
+
+## Development Notes
+
+The React Compiler is not enabled by default because it may impact development and build performance.  
+For enabling it, see the React documentation:
+
+https://react.dev/learn/react-compiler/installation
+
+For production applications, using **TypeScript with type-aware ESLint rules** is recommended.  
+See the official Vite TypeScript template for details.
