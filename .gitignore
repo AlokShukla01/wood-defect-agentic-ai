@@ -1,3 +1,18 @@
+# Ignore dataset
+data/
+
+# Ignore trained models
+models/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# virtual environments
+venv/
+.env
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
