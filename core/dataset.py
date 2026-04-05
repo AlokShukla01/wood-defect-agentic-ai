@@ -4,9 +4,13 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
+
+
 class WoodDataset(Dataset):
 
-    def __init__(self, root, label_map=None):
+    def __init__(self, root, label_map=None, transform=None):
 
         self.images = []
         self.labels = []
@@ -28,10 +32,11 @@ class WoodDataset(Dataset):
                     if label_map:
                         self.labels.append(label_map[folder])
 
-        self.transform = transforms.Compose([
+        self.transform = transform or transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((224, 224)),
-            transforms.ToTensor()
+            transforms.ToTensor(),
+            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
 
     def __len__(self):

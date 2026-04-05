@@ -1,0 +1,170 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+@import "tailwindcss";
+
+:root {
+  --bg-900: #08161b;
+  --bg-800: #0d2428;
+  --panel: rgba(8, 21, 27, 0.68);
+  --panel-strong: rgba(10, 31, 38, 0.84);
+  --line: rgba(179, 226, 208, 0.14);
+  --line-strong: rgba(179, 226, 208, 0.3);
+  --text: #f5f3e8;
+  --muted: #b5c7be;
+  --accent: #78e08f;
+  --accent-2: #ffd166;
+  --accent-3: #67d5ff;
+  --danger: #ff7c70;
+  --shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 209, 102, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(120, 224, 143, 0.16), transparent 28%),
+    linear-gradient(180deg, #08161b 0%, #0b1f24 45%, #0b191d 100%);
+  color: var(--text);
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.app-shell {
+  position: relative;
+  overflow-x: clip;
+}
+
+.grain-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(circle at center, black, transparent 85%);
+}
+
+.section-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.glass-card {
+  background: linear-gradient(180deg, rgba(13, 36, 40, 0.76), rgba(8, 20, 24, 0.9));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.soft-card {
+  background: linear-gradient(180deg, rgba(14, 39, 44, 0.58), rgba(11, 28, 33, 0.78));
+  border: 1px solid rgba(179, 226, 208, 0.1);
+  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(16px);
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.24);
+  background: rgba(255, 209, 102, 0.08);
+  color: #ffe3a1;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(179, 226, 208, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.metric-tile {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(179, 226, 208, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  padding: 1rem;
+}
+
+.interactive-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.interactive-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.5), rgba(103, 213, 255, 0.2), rgba(120, 224, 143, 0.45));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.wood-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  background: linear-gradient(135deg, #ffd166, #f3a93b);
+  color: #142126;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  box-shadow: 0 18px 26px rgba(243, 169, 59, 0.2);
+}
+
+.wood-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.wood-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.secondary-button {
+  border-radius: 999px;
+  border: 1px solid rgba(120, 224, 143, 0.25);
+  background: rgba(120, 224, 143, 0.12);
+  color: #d7ffdf;
+  font-weight: 600;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  background: rgba(120, 224, 143, 0.18);
+}
