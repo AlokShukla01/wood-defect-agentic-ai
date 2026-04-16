@@ -1,6 +1,8 @@
 from pathlib import Path
+import random
 
 import cv2
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -12,8 +14,9 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 
 class SegmentationDataset(Dataset):
 
-    def __init__(self, samples, image_transform=None):
+    def __init__(self, samples, image_transform=None, augment=False):
         self.samples = samples
+        self.augment = augment
         self.image_transform = image_transform or transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((224, 224)),
@@ -34,10 +37,38 @@ class SegmentationDataset(Dataset):
         image = cv2.resize(image, (224, 224))
         mask = cv2.resize(mask, (224, 224), interpolation=cv2.INTER_NEAREST)
 
+        if self.augment:
+            image, mask = self.apply_augmentation(image, mask)
+
         image_tensor = self.image_transform(image)
         mask_tensor = torch.from_numpy((mask > 0).astype("float32")).unsqueeze(0)
 
         return image_tensor, mask_tensor
+
+    def apply_augmentation(self, image, mask):
+
+        if random.random() < 0.5:
+            image = cv2.flip(image, 1)
+            mask = cv2.flip(mask, 1)
+
+        if random.random() < 0.5:
+            image = cv2.flip(image, 0)
+            mask = cv2.flip(mask, 0)
+
+        rotations = random.choice([0, 1, 2, 3])
+        if rotations:
+            image = np.rot90(image, rotations).copy()
+            mask = np.rot90(mask, rotations).copy()
+
+        if random.random() < 0.6:
+            alpha = random.uniform(0.85, 1.15)
+            beta = random.uniform(-12, 12)
+            image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+
+        if random.random() < 0.2:
+            image = cv2.GaussianBlur(image, (3, 3), 0)
+
+        return image, mask
 
 
 def build_segmentation_samples(data_root):

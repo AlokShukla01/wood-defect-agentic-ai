@@ -10,7 +10,11 @@ export default function GroundTruthComparison({ result }) {
     ? `data:image/png;base64,${result.comparison_overlay}`
     : null
   const comparisonStats = result?.comparison_stats
-  const evaluationModel = result?.evaluation_model || "N/A"
+  const evaluationModel = result?.evaluation_model === "hybrid_resnet50_vit_segmenter"
+    ? "Hybrid ResNet50-ViT"
+    : result?.evaluation_model === "unet_segmenter_refined"
+      ? "Legacy U-Net"
+      : result?.evaluation_model || "N/A"
 
   return (
     <div className="glass-card rounded-[1.8rem] p-5 md:col-span-2">
@@ -20,7 +24,7 @@ export default function GroundTruthComparison({ result }) {
       </div>
 
       <p className="mb-5 mt-3 text-sm text-[var(--muted)]">
-        Compare the evaluation mask against the dataset mask and inspect where they overlap or disagree.
+        Compare the hybrid evaluation mask against the dataset mask and inspect where they overlap or disagree.
       </p>
 
       <div className="mb-5 flex flex-wrap gap-3 text-xs">

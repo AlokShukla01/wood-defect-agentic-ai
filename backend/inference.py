@@ -10,7 +10,7 @@ from torchvision import models
 from backend.agent import build_agent_plan
 from backend.evaluation import evaluate_prediction
 from models.padim import PaDiM
-from models.unet import UNet
+from models.unet import HybridResNet50ViTUNet, UNet
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOW_CONFIDENCE_THRESHOLD = 0.70
@@ -25,6 +25,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 classifier = None
 segmenter = None
+segmenter_model_name = None
+runtime_anomaly_threshold = None
 
 # -----------------------------
 # Load PaDiM (🔥 IMPORTANT)
@@ -39,6 +41,51 @@ padim.feature_dim = padim_data.get("feature_dim")
 padim.feature_hw = tuple(padim_data["feature_hw"]) if padim_data.get("feature_hw") is not None else tuple(padim.mean.shape[:2])
 
 labels = ["color","combined","hole","liquid","scratch"]
+
+
+def _image_to_tensor(image_path):
+
+    from utils.image_utils import load_image
+
+    with open(image_path, "rb") as handle:
+        return load_image(handle.read())
+
+
+def estimate_runtime_anomaly_threshold(max_good_samples=80):
+
+    good_dir = os.path.join(BASE_DIR, "data", "wood", "train", "good")
+    if not os.path.isdir(good_dir):
+        return padim.score_threshold
+
+    image_paths = sorted(
+        path for path in glob.glob(os.path.join(good_dir, "*"))
+        if os.path.isfile(path)
+    )[:max_good_samples]
+
+    if not image_paths:
+        return padim.score_threshold
+
+    scores = []
+
+    for image_path in image_paths:
+        try:
+            tensor = _image_to_tensor(image_path).to(device)
+            feat = padim.extract(tensor)
+            dist_map = padim.distance_map_from_features(feat)
+            scores.append(float(padim.image_scores(dist_map)[0]))
+        except Exception:
+            continue
+
+    if not scores:
+        return padim.score_threshold
+
+    percentile_threshold = float(np.percentile(scores, 99))
+    conservative_floor = float(np.mean(scores) + 4.0 * np.std(scores))
+    return max(percentile_threshold, conservative_floor, float(padim.score_threshold or 0.0))
+
+
+runtime_anomaly_threshold = estimate_runtime_anomaly_threshold()
+print(f"✅ Runtime anomaly threshold: {runtime_anomaly_threshold:.3f}")
 
 # -----------------------------
 # Grad-CAM Setup
@@ -85,6 +132,23 @@ def calibrate_prediction_confidence(
     return max(0.10, min(0.99, confidence))
 
 
+def is_probable_defect(anomaly_score, raw_confidence):
+
+    if anomaly_score is None:
+        return raw_confidence >= 0.80
+
+    threshold = runtime_anomaly_threshold or padim.score_threshold
+
+    if threshold is None:
+        return raw_confidence >= 0.80
+
+    if anomaly_score >= threshold:
+        return True
+
+    borderline_threshold = 0.75 * threshold
+    return raw_confidence >= 0.88 and anomaly_score >= borderline_threshold
+
+
 def load_classifier():
 
     global classifier
@@ -113,16 +177,27 @@ def reload_classifier():
 
 def load_segmenter():
 
-    global segmenter
+    global segmenter, segmenter_model_name
 
     segmenter_path = os.path.join(BASE_DIR, "models/segmenter.pth")
     if not os.path.exists(segmenter_path):
         segmenter = None
+        segmenter_model_name = None
         print("⚠️ Segmenter model not found. Falling back to PaDiM masks for evaluation.")
         return
 
-    loaded_segmenter = UNet().to(device)
-    loaded_segmenter.load_state_dict(torch.load(segmenter_path, map_location=device))
+    state_dict = torch.load(segmenter_path, map_location=device)
+    loaded_segmenter = HybridResNet50ViTUNet(pretrained_encoder=False).to(device)
+
+    try:
+        loaded_segmenter.load_state_dict(state_dict)
+        segmenter_model_name = "hybrid_resnet50_vit_segmenter"
+    except RuntimeError:
+        print("⚠️ Hybrid segmenter weights not found. Loading legacy U-Net segmenter.")
+        loaded_segmenter = UNet().to(device)
+        loaded_segmenter.load_state_dict(state_dict)
+        segmenter_model_name = "unet_segmenter_refined"
+
     loaded_segmenter.eval()
     segmenter = loaded_segmenter
     print("✅ Segmenter loaded")
@@ -244,7 +319,30 @@ def segment_defect_mask(img_tensor, img_np, support_map=None):
     probs = cv2.resize(probs, (img_np.shape[1], img_np.shape[0]))
     probs = cv2.GaussianBlur(probs, (5, 5), 0)
 
-    mask = (probs > SEGMENTER_PROB_THRESHOLD).astype(np.uint8)
+    if segmenter_model_name == "hybrid_resnet50_vit_segmenter" and support_map is not None:
+        support_resized = cv2.resize(support_map, (img_np.shape[1], img_np.shape[0]))
+        support_resized = (support_resized - support_resized.min()) / (
+            support_resized.max() - support_resized.min() + 1e-8
+        )
+        probs = 0.70 * probs + 0.30 * support_resized
+
+    otsu_input = np.uint8(255 * np.clip(probs, 0, 1))
+    otsu_threshold, _ = cv2.threshold(
+        otsu_input, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+    adaptive_threshold = float(otsu_threshold) / 255.0
+
+    if segmenter_model_name == "hybrid_resnet50_vit_segmenter":
+        threshold = float(np.clip(adaptive_threshold, 0.30, 0.65))
+    else:
+        threshold = SEGMENTER_PROB_THRESHOLD
+
+    mask = (probs > threshold).astype(np.uint8)
+
+    if mask.sum() == 0 and segmenter_model_name == "hybrid_resnet50_vit_segmenter":
+        fallback_threshold = max(0.20, threshold - 0.15)
+        mask = (probs > fallback_threshold).astype(np.uint8)
+
     kernel = np.ones((3, 3), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
@@ -372,10 +470,7 @@ def predict(img_tensor, img_np, filename, dataset_label=None):
         pred_mask = cv2.morphologyEx(pred_mask, cv2.MORPH_CLOSE, close_kernel)
         pred_mask = filter_mask_components(pred_mask, support_map=anomaly_map)
 
-        is_defect = True
-
-        if padim.score_threshold is not None:
-            is_defect = anomaly_score >= padim.score_threshold
+        is_defect = is_probable_defect(anomaly_score, raw_confidence)
 
         # -----------------------------
         # GT SEARCH
@@ -404,7 +499,7 @@ def predict(img_tensor, img_np, filename, dataset_label=None):
 
                 if segmenter_mask is not None and segmenter_mask.sum() > 0:
                     eval_mask = segmenter_mask
-                    evaluation_model = "unet_segmenter_refined"
+                    evaluation_model = segmenter_model_name or "segmenter_refined"
 
                 metrics = evaluate_prediction(eval_mask, gt_mask)
                 predicted_mask_b64 = encode_mask(eval_mask)
@@ -424,23 +519,20 @@ def predict(img_tensor, img_np, filename, dataset_label=None):
         print("❌ PaDiM ERROR:", e)
         metrics = None
 
-    is_defect = True
-
-    if anomaly_score is not None and padim.score_threshold is not None:
-        is_defect = anomaly_score >= padim.score_threshold
+    is_defect = is_probable_defect(anomaly_score, raw_confidence)
 
     confidence = calibrate_prediction_confidence(
         raw_confidence=raw_confidence,
         is_defect=is_defect,
         anomaly_score=anomaly_score,
-        anomaly_threshold=padim.score_threshold,
+        anomaly_threshold=runtime_anomaly_threshold or padim.score_threshold,
         metrics=metrics,
     )
 
-    resolved_defect_type = labels[pred] if is_defect else None
+    resolved_defect_type = labels[pred] if is_defect and confidence >= LOW_CONFIDENCE_THRESHOLD else None
     prediction_source = "classifier"
 
-    if is_defect and matched_defect_folder in labels:
+    if is_defect and confidence >= LOW_CONFIDENCE_THRESHOLD and matched_defect_folder in labels:
         resolved_defect_type = matched_defect_folder
         prediction_source = "dataset_match"
 
@@ -461,7 +553,7 @@ def predict(img_tensor, img_np, filename, dataset_label=None):
         prediction=result,
         confidence=confidence,
         anomaly_score=anomaly_score,
-        anomaly_threshold=padim.score_threshold,
+        anomaly_threshold=runtime_anomaly_threshold or padim.score_threshold,
         metrics=metrics,
         has_ground_truth=metrics is not None,
         evaluation_model=evaluation_model,
@@ -499,7 +591,7 @@ def predict(img_tensor, img_np, filename, dataset_label=None):
         "confidence": confidence,
         "confidence_threshold": LOW_CONFIDENCE_THRESHOLD,
         "anomaly_score": anomaly_score,
-        "anomaly_threshold": padim.score_threshold,
+        "anomaly_threshold": runtime_anomaly_threshold or padim.score_threshold,
         "heatmap": heatmap,
         "metrics": metrics,
         "predicted_mask": predicted_mask_b64,

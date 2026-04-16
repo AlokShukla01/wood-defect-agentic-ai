@@ -13,6 +13,7 @@ def append_prediction_log(base_dir, result, source_filename=None):
         "prediction": result.get("prediction"),
         "confidence": result.get("confidence"),
         "anomaly_score": result.get("anomaly_score"),
+        "evaluation_model": result.get("evaluation_model"),
         "agent_action": result.get("agent_action"),
         "metrics": result.get("metrics")
     }

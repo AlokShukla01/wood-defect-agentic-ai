@@ -55,9 +55,9 @@ export default function Hero() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="metric-tile">
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent-2)]">Pipeline</p>
-              <h3 className="mt-3 text-2xl font-bold">Classifier + PaDiM + U-Net</h3>
+              <h3 className="mt-3 text-2xl font-bold">Classifier + PaDiM + Hybrid Segmenter</h3>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Multi-stage inference to classify, localize, and evaluate wood surface defects.
+                ResNet50-ViT segmentation with attention skip connections for sharper mask evaluation.
               </p>
             </div>
             <div className="metric-tile">

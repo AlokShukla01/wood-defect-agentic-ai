@@ -3,7 +3,7 @@
 Wood defect inspection system built with:
 - a CNN classifier for known defect classes
 - PaDiM anomaly detection for defect vs normal analysis
-- a U-Net segmenter for defect mask refinement
+- a custom hybrid ResNet50-ViT segmenter with attention skip connections for defect mask refinement
 - a FastAPI backend
 - a React + Vite frontend
 - a local workflow-based agentic review and retraining loop
@@ -223,7 +223,7 @@ Output:
 - `models/segmenter.pth`
 
 Purpose:
-- trains the U-Net model used to refine defect localization masks
+- trains the custom hybrid ResNet50-ViT model used to refine defect localization masks
 
 ### 3. Train Classifier
 
@@ -286,7 +286,7 @@ npm run dev
 - The backend depends on trained model files being present in `models/`.
 - Ground-truth comparison works best for images that come from the dataset.
 - Retraining currently updates the classifier only.
-- Segmenter and PaDiM are trained separately from their own scripts.
+- The hybrid segmenter and PaDiM are trained separately from their own scripts.
 - If you change backend code, restart the backend server.
 - If you change frontend code, Vite usually hot-reloads automatically.
 

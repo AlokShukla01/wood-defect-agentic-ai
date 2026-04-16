@@ -66,7 +66,7 @@ export default function UploadBox({ setResult, setPreview, setUploadedFile }) {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <span className="badge-pill">PNG / JPG</span>
-              <span className="badge-pill">Mask evaluation</span>
+              <span className="badge-pill">Hybrid mask evaluation</span>
               <span className="badge-pill">Feedback-ready</span>
             </div>
           </div>

@@ -6,6 +6,11 @@ export default function MetricsCard({ metrics, result }) {
   const dice = metrics?.dice
   const acc = metrics?.accuracy
   const evaluationModel = result?.evaluation_model
+  const segmenterLabel = evaluationModel === "hybrid_resnet50_vit_segmenter"
+    ? "Hybrid ResNet50-ViT"
+    : evaluationModel === "unet_segmenter_refined"
+      ? "Legacy U-Net"
+      : evaluationModel
 
   // -----------------------------
   // Quality Indicator (based on IoU)
@@ -37,7 +42,7 @@ export default function MetricsCard({ metrics, result }) {
         </div>
         <div className="metric-tile">
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--accent-3)]">Evaluation model</p>
-          <p className="mt-2 text-lg font-semibold">{evaluationModel || "N/A"}</p>
+          <p className="mt-2 text-lg font-semibold">{segmenterLabel || "N/A"}</p>
         </div>
         <div className="metric-tile">
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--accent-2)]">IoU</p>
